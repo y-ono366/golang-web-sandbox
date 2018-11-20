@@ -5,8 +5,11 @@ import (
 )
 
 type client struct {
+	//websocket
 	socket *websocket.Conn
+	//メッセージはここのチャネル
 	send chan []byte
+	//clientが参加しているroom
 	room *room
 }
 
