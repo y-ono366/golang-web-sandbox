@@ -1,5 +1,11 @@
 package main
 
+import (
+	"github.com/gorilla/websocket"
+	"net/http"
+	"log"
+)
+
 type room struct {
 	// forwardは他のクライアントに転送するためのメッセージを保持するチャネルです。
 	forward chan []byte
@@ -43,6 +49,16 @@ const (
 	socketBufferSize = 1024
 	messageBufferSize = 256
 )
+
+func newRoom() *room {
+	return &room{
+		forward: make(chan []byte),
+		join: make(chan *client),
+		leave: make(chan *client),
+		clients: make(map[*client]bool),
+	}
+}
+
 var upgrader = &websocket.Upgrader{ReadBufferSize:socketBufferSize, WriteBufferSize: socketBufferSize}
 
 func (r *room) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -61,13 +77,4 @@ func (r *room) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	defer func() { r.leave <- client }()
 	go client.write()
 	client.read()
-}
-
-func newRoom() *room {
-	return &room{
-		forward: make(chan []byte),
-		join: make(chan *client),
-		leave: make(chan *client),
-		clients: make(map[*client]bool),
-	}
 }
