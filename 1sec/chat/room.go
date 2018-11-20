@@ -1,88 +1,40 @@
 package main
 
-import (
-	"log"
-	"net/http"
-
-	"github.com/gorilla/websocket"
-	"github.com/matryer/goblueprints/chapter1/trace"
-)
-
 type room struct {
-
-	// forward is a channel that holds incoming messages
-	// that should be forwarded to the other clients.
+	// forwardは他のクライアントに転送するためのメッセージを保持するチャネルです。
 	forward chan []byte
-
-	// join is a channel for clients wishing to join the room.
+	// joinはチャットルームに参加しようとしているクライアントのためのチャネルです。
 	join chan *client
-
-	// leave is a channel for clients wishing to leave the room.
+	// leaveはチャットルームから退室しようとしているクライアントのためのチャネルです。
 	leave chan *client
-
-	// clients holds all current clients in this room.
+	// clientsには在室しているすべてのクライアントが保持されます。
 	clients map[*client]bool
-
-	// tracer will receive trace information of activity
-	// in the room.
-	tracer trace.Tracer
-}
-
-// newRoom makes a new room that is ready to
-// go.
-func newRoom() *room {
-	return &room{
-		forward: make(chan []byte),
-		join:    make(chan *client),
-		leave:   make(chan *client),
-		clients: make(map[*client]bool),
-		tracer:  trace.Off(),
-	}
 }
 
 func (r *room) run() {
 	for {
+		//共有されているメモリに対して同期化や変更がいくつか必要な任意の箇所で、このselect文を利用
 		select {
 		case client := <-r.join:
-			// joining
+			// 参加
 			r.clients[client] = true
-			r.tracer.Trace("New client joined")
 		case client := <-r.leave:
-			// leaving
+			// 退室
 			delete(r.clients, client)
 			close(client.send)
-			r.tracer.Trace("Client left")
 		case msg := <-r.forward:
-			r.tracer.Trace("Message received: ", string(msg))
-			// forward message to all clients
+
+			// すべてのクライアントにメッセージを転送
 			for client := range r.clients {
-				client.send <- msg
-				r.tracer.Trace(" -- sent to client")
+				select {
+				case client.send <- msg:
+				// メッセージを送信
+				default:
+				// 送信に失敗
+				delete(r.clients, client)
+				close(client.send)
+				}
 			}
 		}
 	}
-}
-
-const (
-	socketBufferSize  = 1024
-	messageBufferSize = 256
-)
-
-var upgrader = &websocket.Upgrader{ReadBufferSize: socketBufferSize, WriteBufferSize: socketBufferSize}
-
-func (r *room) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	socket, err := upgrader.Upgrade(w, req, nil)
-	if err != nil {
-		log.Fatal("ServeHTTP:", err)
-		return
-	}
-	client := &client{
-		socket: socket,
-		send:   make(chan []byte, messageBufferSize),
-		room:   r,
-	}
-	r.join <- client
-	defer func() { r.leave <- client }()
-	go client.write()
-	client.read()
 }
