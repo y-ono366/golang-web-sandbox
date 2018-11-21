@@ -6,6 +6,8 @@ import(
 	"sync"
 	"path/filepath"
 	"text/template"
+	"os"
+	"dev/trace"
 )
 
 type templateHandler struct {
@@ -23,6 +25,7 @@ func (t *templateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	r := newRoom()
+	r.tracer = trace.New(os.Stdout)
 	http.Handle("/", &templateHandler{filename: "chat.html"})
 	http.Handle("/room", r)
 	// チャットルームを開始します
