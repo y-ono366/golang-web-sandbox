@@ -32,6 +32,6 @@ func main() {
 	go r.run()
 	// Webサーバーを起動します
 	if err := http.ListenAndServe(":8080", nil); err != nil {
-	log.Fatal("ListenAndServe:", err)
+		log.Fatal("ListenAndServe:", err)
 	}
 }
