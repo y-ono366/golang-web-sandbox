@@ -2,9 +2,9 @@ package main
 
 import (
 	"github.com/gorilla/websocket"
-	"net/http"
+	"github.com/y-ono366/golang-web-sandbox/2sec/trace"
 	"log"
-	"dev/trace"
+	"net/http"
 )
 
 type room struct {
@@ -40,13 +40,13 @@ func (r *room) run() {
 			for client := range r.clients {
 				select {
 				case client.send <- msg:
-				// メッセージを送信
-				r.tracer.Trace("[success]送信成功")
+					// メッセージを送信
+					r.tracer.Trace("[success]送信成功")
 				default:
-				// 送信に失敗
-				delete(r.clients, client)
-				close(client.send)
-				r.tracer.Trace("[faild]送信失敗")
+					// 送信に失敗
+					delete(r.clients, client)
+					close(client.send)
+					r.tracer.Trace("[faild]送信失敗")
 				}
 			}
 		}
@@ -54,21 +54,21 @@ func (r *room) run() {
 }
 
 const (
-	socketBufferSize = 1024
+	socketBufferSize  = 1024
 	messageBufferSize = 256
 )
 
 func newRoom() *room {
 	return &room{
 		forward: make(chan []byte),
-		join: make(chan *client),
-		leave: make(chan *client),
+		join:    make(chan *client),
+		leave:   make(chan *client),
 		clients: make(map[*client]bool),
-		tracer: trace.Off(),
+		tracer:  trace.Off(),
 	}
 }
 
-var upgrader = &websocket.Upgrader{ReadBufferSize:socketBufferSize, WriteBufferSize: socketBufferSize}
+var upgrader = &websocket.Upgrader{ReadBufferSize: socketBufferSize, WriteBufferSize: socketBufferSize}
 
 func (r *room) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	socket, err := upgrader.Upgrade(w, req, nil)
@@ -79,8 +79,8 @@ func (r *room) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	client := &client{
 		socket: socket,
-		send: make(chan []byte, messageBufferSize),
-		room: r,
+		send:   make(chan []byte, messageBufferSize),
+		room:   r,
 	}
 	r.join <- client
 	defer func() { r.leave <- client }()

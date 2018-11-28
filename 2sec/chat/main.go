@@ -1,10 +1,10 @@
 package main
 
-import(
+import (
 	"log"
 	"net/http"
-	"sync"
 	"path/filepath"
+	"sync"
 	"text/template"
 	// "os"
 	// "dev/trace"
@@ -18,7 +18,7 @@ type templateHandler struct {
 
 func (t *templateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	t.once.Do(func() {
-		t.templ = template.Must(template.ParseFiles(filepath.Join("template",t.filename)))
+		t.templ = template.Must(template.ParseFiles(filepath.Join("template", t.filename)))
 	})
 	t.templ.Execute(w, nil)
 }
@@ -26,10 +26,10 @@ func (t *templateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func main() {
 	r := newRoom()
 	// r.tracer = trace.New(os.Stdout)
-	http.Handle("/", &templateHandler{filename: "chat.html"})
-	http.Handle("/room", r)
 	http.Handle("/chat", MustAuth(&templateHandler{filename: "chat.html"}))
 	http.Handle("/login", &templateHandler{filename: "login.html"})
+	http.Handle("/room", r)
+
 	// チャットルームを開始します
 	go r.run()
 	// Webサーバーを起動します
