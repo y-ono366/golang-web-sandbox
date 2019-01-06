@@ -4,12 +4,14 @@ import (
 	. "fmt"
 	"github.com/ChimeraCoder/anaconda"
 	"net/url"
+	. "os"
 )
 
 func main() {
 	api := GetTwitterApi()
 
 	v := url.Values{}
+	Println(v)
 	v.Set("count", "10")
 
 	tweets, err := api.GetHomeTimeline(v)
@@ -21,13 +23,13 @@ func main() {
 		Println("tweet: ", tweet.Text)
 	}
 
-	text := "Hello world from golang"
-	tweet, err := api.PostTweet(text, nil)
-	if err != nil {
-		panic(err)
-	}
-
-	Print(tweet.Text)
+	// text := "Hello world from golang"
+	// tweet, err := api.PostTweet(text, nil)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	//
+	// Print(tweet.Text)
 
 }
 
